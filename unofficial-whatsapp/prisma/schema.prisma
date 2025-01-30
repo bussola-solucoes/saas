@@ -1,0 +1,367 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id                     String                   @id @default(cuid())
+  name                   String
+  cnpj                   String?                  @unique
+  cpf                    String?                  @unique
+  phone                  String
+  street                 String
+  number                 Int?
+  neighborhood           String
+  complement             String?
+  city                   String
+  state                  String
+  country                String
+  zipCode                String
+  disable                Boolean?                 @default(false)
+  paymentDate            DateTime?
+  logo                   String?
+  startTime              String?
+  endTime                String?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @default(now())
+  createdBy              String?
+  updatedBy              String?
+  users                  Users[]
+  roles                  Roles[]
+  rolePermissions        RolePermissions[]
+  orderStatus            OrderStatus[]
+  messageOrderStatus     MessageOrderStatus[]
+  messageOrderStatusSend MessageOrderStatusSend[]
+  auditLog               AuditLog[]
+  externalProvider   ExternalProvider[]
+  providerEndpoint   ProviderEndpoint[]
+  providerCredential ProviderCredential[]
+  integration        Integration[]
+  integrationLog     IntegrationLog[]
+  dataMapping        DataMapping[]
+  syncJob            SyncJob[]
+}
+
+model Users {
+  id                        String     @id @default(uuid())
+  code                      Int        @default(autoincrement())
+  objectId                  String?    @default("users")
+  company                   Company?   @relation(fields: [companyId], references: [id])
+  companyId                 String?
+  name                      String
+  email                     String     @unique
+  password                  String
+  admin                     Boolean?   @default(false)
+  disable                   Boolean?   @default(false)
+  surname                   String
+  avatar                    String?
+  createdAt                 DateTime   @default(now())
+  updatedAt                 DateTime   @updatedAt
+  changePasswordAtNextLogon Boolean?   @default(false)
+  createdBy                 String?
+  updatedBy                 String?
+  roles                     Roles[]
+  auditLog                  AuditLog[]
+}
+
+model Roles {
+  id          String            @id @default(uuid())
+  name        String
+  description String?
+  company     Company?          @relation(fields: [companyId], references: [id])
+  companyId   String?
+  users       Users             @relation(fields: [usersId], references: [id])
+  usersId     String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  permissions RolePermissions[]
+}
+
+enum Permissions {
+  views
+  insert
+  update
+  delete
+}
+
+model RolePermissions {
+  id         String      @id @default(uuid())
+  permission Permissions
+  company    Company?    @relation(fields: [companyId], references: [id])
+  companyId  String?
+  roles      Roles       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId     String
+  active     Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  createdBy  String?
+  updatedBy  String?
+}
+
+model OrderStatus {
+  id                     String                   @id @default(uuid())
+  code                   Int                      @unique
+  name                   String
+  company                Company?                 @relation(fields: [companyId], references: [id])
+  companyId              String?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  createdBy              String?
+  updatedBy              String?
+  messageOrderStatus     MessageOrderStatus[]
+  messageOrderStatusSend MessageOrderStatusSend[]
+}
+
+model MessageOrderStatus {
+  id          String      @id @default(uuid())
+  code        Int         @default(autoincrement())
+  company     Company?    @relation(fields: [companyId], references: [id])
+  companyId   String?
+  orderStatus OrderStatus @relation(fields: [statusCode], references: [code])
+  statusCode  Int
+  statusName  String
+  message     String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  createdBy   String?
+  updatedBy   String?
+}
+
+enum StatusSendWAPP {
+  waiting
+  success
+  error
+}
+
+model MessageOrderStatusSend {
+  id                    String          @id @default(uuid())
+  code                  Int             @default(autoincrement())
+  orderId               String
+  company               Company?        @relation(fields: [companyId], references: [id])
+  companyId             String?
+  orderStatus           OrderStatus     @relation(fields: [statusCode], references: [code])
+  statusCode            Int
+  statusName            String
+  statusDate            String
+  name                  String
+  email                 String
+  phone                 String
+  shippingName          String?
+  shippingValue         String?
+  shippingTime          String?
+  shippingCode          String?
+  shippingUrl           String?
+  statusSendWAPP        StatusSendWAPP? @default(waiting)
+  messageStatusSendWAPP String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  createdBy             String?
+  updatedBy             String?
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  code         Int      @default(autoincrement())
+  company      Company? @relation(fields: [companyId], references: [id])
+  companyId    String?
+  method       String
+  url          String
+  body         String
+  responseTime Int
+  response     String
+  users        Users?   @relation(fields: [userId], references: [id])
+  userId       String?
+  email        String
+  statusCode   Int
+  message      String
+  createdAt    DateTime @default(now())
+}
+
+// Configuração de provedores externos
+model ExternalProvider {
+  id          String         @id @default(uuid())
+  company     Company?       @relation(fields: [companyId], references: [id])
+  companyId   String?
+  name        String
+  description String?
+  baseUrl     String
+  status      ProviderStatus @default(ACTIVE)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relacionamentos
+  integrations Integration[]
+  endpoints    ProviderEndpoint[]
+  credentials  ProviderCredential[]
+}
+
+// Endpoints disponíveis por provedor
+model ProviderEndpoint {
+  id          String     @id @default(uuid())
+  company     Company?   @relation(fields: [companyId], references: [id])
+  companyId   String?
+  providerId  String
+  name        String
+  path        String
+  method      HttpMethod
+  description String?
+  parameters  Json? // Parâmetros esperados
+  headers     Json? // Headers necessários
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relacionamentos
+  provider ExternalProvider @relation(fields: [providerId], references: [id])
+  mappings DataMapping[]
+}
+
+// Credenciais por provedor
+model ProviderCredential {
+  id         String         @id @default(uuid())
+  company    Company?       @relation(fields: [companyId], references: [id])
+  companyId  String?
+  providerId String
+  type       CredentialType
+  key        String
+  value      String // Valor encriptado
+  isActive   Boolean        @default(true)
+  expiresAt  DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  // Relacionamentos
+  provider ExternalProvider @relation(fields: [providerId], references: [id])
+}
+
+// Integrações ativas
+model Integration {
+  id         String            @id @default(uuid())
+  company    Company?          @relation(fields: [companyId], references: [id])
+  companyId  String?
+  providerId String
+  name       String
+  status     IntegrationStatus @default(ACTIVE)
+  settings   Json? // Configurações específicas
+  webhookUrl String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  // Relacionamentos
+  provider ExternalProvider @relation(fields: [providerId], references: [id])
+  logs     IntegrationLog[]
+  syncJobs SyncJob[]
+}
+
+// Logs de integração
+model IntegrationLog {
+  id            String    @id @default(uuid())
+  company       Company?  @relation(fields: [companyId], references: [id])
+  companyId     String?
+  integrationId String
+  type          LogType
+  status        LogStatus
+  payload       Json?
+  error         String?
+  duration      Int? // em milissegundos
+  createdAt     DateTime  @default(now())
+
+  // Relacionamentos
+  integration Integration @relation(fields: [integrationId], references: [id])
+}
+
+// Mapeamento de dados
+model DataMapping {
+  id             String   @id @default(uuid())
+  company        Company? @relation(fields: [companyId], references: [id])
+  companyId      String?
+  endpointId     String
+  sourceField    String
+  targetField    String
+  transformation String? // Regra de transformação em JSON
+  isRequired     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relacionamentos
+  endpoint ProviderEndpoint @relation(fields: [endpointId], references: [id])
+}
+
+// Jobs de sincronização
+model SyncJob {
+  id               String    @id @default(uuid())
+  company          Company?  @relation(fields: [companyId], references: [id])
+  companyId        String?
+  integrationId    String
+  type             SyncType
+  status           JobStatus
+  startTime        DateTime  @default(now())
+  endTime          DateTime?
+  totalRecords     Int?
+  processedRecords Int?
+  errorCount       Int?
+  lastSyncKey      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relacionamentos
+  integration Integration @relation(fields: [integrationId], references: [id])
+}
+
+// Enums
+enum ProviderStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum HttpMethod {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+}
+
+enum CredentialType {
+  API_KEY
+  OAUTH_TOKEN
+  USERNAME_PASSWORD
+  CERTIFICATE
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+}
+
+enum LogType {
+  REQUEST
+  RESPONSE
+  ERROR
+  SYNC
+}
+
+enum LogStatus {
+  SUCCESS
+  ERROR
+  PENDING
+}
+
+enum SyncType {
+  FULL
+  INCREMENTAL
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
