@@ -37,13 +37,15 @@ model Company {
   messageOrderStatus     MessageOrderStatus[]
   messageOrderStatusSend MessageOrderStatusSend[]
   auditLog               AuditLog[]
-  externalProvider   ExternalProvider[]
-  providerEndpoint   ProviderEndpoint[]
-  providerCredential ProviderCredential[]
-  integration        Integration[]
-  integrationLog     IntegrationLog[]
-  dataMapping        DataMapping[]
-  syncJob            SyncJob[]
+  externalProvider       ExternalProvider[]
+  providerEndpoint       ProviderEndpoint[]
+  providerCredential     ProviderCredential[]
+  integration            Integration[]
+  integrationLog         IntegrationLog[]
+  dataMapping            DataMapping[]
+  syncJob                SyncJob[]
+  artificialIntelligence ArtificialIntelligence[]
+  artificialIntelligenceConversation ArtificialIntelligenceConversation[]
 }
 
 model Users {
@@ -364,4 +366,51 @@ enum JobStatus {
   RUNNING
   COMPLETED
   FAILED
+}
+
+model ArtificialIntelligenceType {
+  id                          String                        @id @default(uuid())
+  objectId                    String                        @default("artificialIntelligenceType")
+  platform                    String                        @unique
+  baseUrl                     String                        @unique
+  artificialIntelligence      ArtificialIntelligence[]
+  artificialIntelligenceModel ArtificialIntelligenceModel[]
+
+  @@unique([platform, baseUrl])
+}
+
+model ArtificialIntelligenceModel {
+  id         String                     @id @default(uuid())
+  objectId   String                     @default("artificialIntelligenceModel")
+  platform   ArtificialIntelligenceType @relation(fields: [platformId], references: [id])
+  platformId String
+  model      String
+}
+
+model ArtificialIntelligenceConversation {
+  id        String   @id @default(cuid())
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  companyId String?
+  waId      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ArtificialIntelligence {
+  id                         String                     @id @default(uuid())
+  objectId                   String?                    @default("artificialIntelligence")
+  company                    Company?                   @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  companyId                  String?
+  artificialIntelligenceType ArtificialIntelligenceType @relation(fields: [platform, baseUrl], references: [platform, baseUrl])
+  platform                   String
+  baseUrl                    String
+  apiKey                     String                     @default("")
+  prompt                     String
+  model                      String
+  assistantId                String                     @default("")
+  aiVersion                  String                     @default("assistants=v2")
+  nameAI                     String?                    @default("Jomf")
+  projectId                  String
+  createdAt                  DateTime                   @default(now())
+  updatedAt                  DateTime                   @updatedAt
 }

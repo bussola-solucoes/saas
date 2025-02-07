@@ -25,6 +25,7 @@ import { ProviderCredentialModule } from './provider-credential/provider-credent
 import { DataMappingModule } from './data-mapping/data-mapping.module';
 import { BullModule } from '@nestjs/bull';
 import { BullConfigModule } from './bull-config/bull-config.module';
+import { ArtificialIntelligenceModule } from './artificial-intelligence/artificial-intelligence.module';
 
 @Module({
   imports: [
@@ -50,7 +51,8 @@ import { BullConfigModule } from './bull-config/bull-config.module';
     ProviderEndpointModule,
     ProviderCredentialModule,
     DataMappingModule,
-    BullConfigModule
+    BullConfigModule,
+    ArtificialIntelligenceModule
   ],
   controllers: [AppController],
   providers: [
